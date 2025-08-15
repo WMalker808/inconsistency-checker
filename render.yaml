@@ -3,7 +3,7 @@ services:
     name: inconsistency-checker
     env: python
     buildCommand: pip install -r requirements.txt && python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('punkt_tab')"
-    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 guardian_style_detector:app
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --worker-class sync --max-requests 1000 --max-requests-jitter 100 guardian_style_detector:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.16
