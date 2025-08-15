@@ -1,0 +1,202 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardian Style Inconsistency Detector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #005689; /* Guardian blue */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea {
+            height: 150px;
+        }
+        button {
+            background-color: #005689;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #00436c;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .term-group {
+            margin-bottom: 30px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .variant-list {
+            margin-top: 10px;
+        }
+        .variant-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .variant-item:last-child {
+            border-bottom: none;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #f9f9f9;
+            border-color: #ddd;
+            border-radius: 4px 4px 0 0;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        .progress {
+            height: 10px;
+            background-color: #005689;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Guardian Style Inconsistency Detector</h1>
+        <p>This tool identifies terms with inconsistent styling (capitalization, hyphenation, etc.) in articles from The Guardian.</p>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="openTab(event, 'textTab')">Text Input</div>
+            <div class="tab" onclick="openTab(event, 'fileTab')">File Upload</div>
+            <div class="tab" onclick="openTab(event, 'dirTab')">Directory Path</div>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data">
+            <div id="textTab" class="tab-content active">
+                <div class="form-group">
+                    <label for="text">Paste article text:</label>
+                    <textarea id="text" name="text"></textarea>
+                </div>
+            </div>
+            
+            <div id="fileTab" class="tab-content">
+                <div class="form-group">
+                    <label for="file">Upload a file:</label>
+                    <input type="file" id="file" name="file">
+                </div>
+            </div>
+            
+            <div id="dirTab" class="tab-content">
+                <div class="form-group">
+                    <label for="directory">Enter directory path:</label>
+                    <input type="text" id="directory" name="directory" placeholder="/path/to/articles">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="min_term_length">Minimum term length:</label>
+                <input type="number" id="min_term_length" name="min_term_length" value="3" min="1">
+            </div>
+            
+            <div class="form-group">
+                <label for="min_occurrences">Minimum occurrences:</label>
+                <input type="number" id="min_occurrences" name="min_occurrences" value="5" min="1">
+            </div>
+            
+            <button type="submit">Analyze</button>
+        </form>
+        
+        {% if results %}
+        <div class="results">
+            <h2>Results</h2>
+            <p>Found {{ results|length }} terms with inconsistent styling.</p>
+            
+            {% for result in results %}
+            <div class="term-group">
+                <h3>{{ result.term }} <small>({{ result.total_occurrences }} total occurrences)</small></h3>
+                
+                <div class="variant-list">
+                    {% for variant in result.variants %}
+                    <div class="variant-item">
+                        <span>{{ variant.variant }}</span>
+                        <span>{{ variant.count }} occurrences ({{ (variant.count / result.total_occurrences * 100)|round(1) }}%)</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {{ (variant.count / result.total_occurrences * 100)|round(1) }}%"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    <script>
+        function openTab(evt, tabName) {
+            // Hide all tab content
+            var tabContents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            
+            // Remove active class from all tabs
+            var tabs = document.getElementsByClassName("tab");
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove("active");
+            }
+            
+            // Show the selected tab content and mark the button as active
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+    </script>
+</body>
+</html>
