@@ -25,16 +25,7 @@ import pandas as pd
 from flask import Flask, render_template, request
 import json
 
-# Download required NLTK data
-try:
-    nltk.download('punkt', quiet=True)
-    nltk.download('stopwords', quiet=True)
-    # Ensure punkt_tab is downloaded as well
-    nltk.download('punkt_tab', quiet=True)
-except Exception as e:
-    print(f"Warning: NLTK download issue: {e}")
-    print("If you continue to have NLTK data issues, run this in a Python interpreter:")
-    print("import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('punkt_tab')")
+# NLTK data is pre-downloaded during build phase - no runtime downloads needed
 
 class StyleInconsistencyDetector:
     def __init__(self, min_term_length=3, min_occurrences=5, similarity_threshold=0.8):
@@ -61,13 +52,11 @@ class StyleInconsistencyDetector:
 
     def extract_ngrams(self, text, max_n=4):
         """Extract n-grams from text, preserving case."""
-        # Use a simpler tokenization method to avoid punkt_tab dependency
         try:
             tokens = word_tokenize(text)
             sentences = sent_tokenize(text)
         except LookupError:
             # Fallback tokenization if NLTK resources aren't available
-            print("Using fallback tokenization method due to NLTK resource issues")
             tokens = text.split()
             sentences = re.split(r'[.!?]+', text)
         
@@ -85,7 +74,10 @@ class StyleInconsistencyDetector:
         
         # Process sentences to extract multi-word phrases
         for sentence in sentences:
-            words = word_tokenize(sentence)
+            try:
+                words = word_tokenize(sentence)
+            except LookupError:
+                words = sentence.split()
             
             # Extract n-grams (n > 1)
             for n in range(2, min(max_n + 1, len(words) + 1)):
